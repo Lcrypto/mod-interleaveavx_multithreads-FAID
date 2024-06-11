@@ -110,7 +110,7 @@ void CModulate::BeforeModulationInterleaver(int8_t *codeseq)
 		//{
 		//	for (j = 0; j < 32; j += 1)
 		//	{
-		//		ILSeq[j *(BitsOverChannel) + i] = codeseq[32 * i + j];//ILSeq(0)=outputbits(0) ILSeq(Bitsoverchannel)=outputbits(1) i=1 IL(1)=outputbits(32) j=3i=1第三帧第一位 outputbits(35)=ILseq(3*bitsoverchannel+1)
+		//		ILSeq[j *(BitsOverChannel) + i] = codeseq[32 * i + j];//ILSeq(0)=outputbits(0) ILSeq(Bitsoverchannel)=outputbits(1) i=1 IL(1)=outputbits(32) j=3i=1 The first bit of the third frame outputbits(35)=ILseq(3*bitsoverchannel+1)
 		//																						
 		//	}
 		//}
@@ -129,11 +129,11 @@ void CModulate::BeforeModulationInterleaver(int8_t *codeseq)
 		//	for (j = 0; j < 32; ++j)
 		//	{
 
-		//		ILSeq[j*BitsOverChannel+ (NmoinsK - _PunctureBits - _ShortenBits)+i] = codeseq[(NmoinsK - _PunctureBits - _ShortenBits) * 32 + 32 * i + j];//j=3 i=5 第三帧第五个check ILSeq(3*bitsoverchannel+(NmoinsK - _PunctureBits - _ShortenBits)+5)=ptr(163)
+		//		ILSeq[j*BitsOverChannel+ (NmoinsK - _PunctureBits - _ShortenBits)+i] = codeseq[(NmoinsK - _PunctureBits - _ShortenBits) * 32 + 32 * i + j];//j=3 i=5 The fifth check of the third frame ILSeq(3*bitsoverchannel+(NmoinsK - _PunctureBits - _ShortenBits)+5)=ptr(163)
 		//	}
 		//}
 	
-	/*分别对每一帧数据进行交织*/
+	/*Interleave each frame of data separately*/
 	
 	for (m = 0; m < 32; m++)
 		{
@@ -155,7 +155,7 @@ void CModulate::BeforeModulationInterleaver(int8_t *codeseq)
 
 void CModulate::AfterDeModulationDeInterleaver()
 {
-	/*解交织后DIL[k]的格式为32*（信息＋校验）*/
+	/*The format of DIL[k] after deinterleaving is 32*(information+check)*/
 	int m, i, j;
 	int k = 0;
 	for (m = 0; m < 32; m++)
@@ -170,7 +170,7 @@ void CModulate::AfterDeModulationDeInterleaver()
 				 }
 		 }
 
-	/*将[32*（信息+检验）]恢复为[（32*信息）+（32*校验）]*/
+	/*Restore [32*(information+check)] to [(32*information)+(32*check)]*/
 	//the information bits
 	for (i = 0; i < 32; ++i)
 
@@ -185,7 +185,7 @@ void CModulate::AfterDeModulationDeInterleaver()
 		//{
 		//	for (j = 0; j < 32; j += 1)
 		//	{
-		//		DeInterLeaveSeq[32 * i + j] = DILSeq[j *BitsOverChannel + i];//j=1  i=1  第一帧的第一比特 应存放在DIL(Bitsoverchannel+1).存放在DeInterLeave(33) j=0 i=5第0帧第五比特存在DIL(5)DeInterLeave(160)
+		//		DeInterLeaveSeq[32 * i + j] = DILSeq[j *BitsOverChannel + i];//j=1 i=1 The first bit of the first frame should be stored in DIL (Bitsoverchannel+1). Stored in DeInterLeave (33) j=0 i=5 The fifth bit of the 0th frame is stored in DIL (5) DeInterLeave (160)
 		//																						
 		//	}
 		//}
@@ -243,20 +243,20 @@ void CModulate::Modulation(int8_t* ReceivedSeq)
 
 	for (i = 0; i < SymbolLen; i++)//16QAM SymbolLen = SourceLen / 4 
 								   //SourceLen = codelen=32*Bitsoverchannel
-								   //R11/12 9216个比特被调制成2304个复数
+								   //R11/12 9216 bits are modulated into 2304 complex numbers
 	{
 		tmp_i = 0;
 		tmp_q = 0;
 
-		for (j = 0; j < half_sym; j++)//16QAM half_sym=2 例如11001100
+		for (j = 0; j < half_sym; j++)//16QAM half_sym=2 For example, 11001100
 
 		{
 
-			tmp_i = tmp_i + (ReceivedSeq[i*ModulationType + 2 * j] << (half_sym - j - 1));// tmp_i=0+0<<1(左移一位）tmp_i=0+1<<1(左移一位）=2
+			tmp_i = tmp_i + (ReceivedSeq[i*ModulationType + 2 * j] << (half_sym - j - 1));// tmp_i=0+0<<1(shift left one bit)tmp_i=0+1<<1(shift left one bit)=2
 			tmp_q = tmp_q + (ReceivedSeq[i*ModulationType + 2 * j + 1] << (half_sym - j - 1));
 		}
 
-		ModSeq[i].real = map_table[tmp_i];//第一个复数的实部取table里的第几个
+		ModSeq[i].real = map_table[tmp_i];//The real part of the first complex number is the number in the table
 		ModSeq[i].imag = map_table[tmp_q];
 
 	}
@@ -402,20 +402,20 @@ ModStatistic CModulate::ModCalErr(float *demodseq, int8_t *encodeseq)
 	float* demodout;
 	demodout = (float*)malloc(sizeof(float)*BitsOverChannel * 32);
 
-	for (i = 0; i < 32; ++i)//32帧串行比较
+	for (i = 0; i < 32; ++i)//32 frame serial comparison
 	{
 		errorBits = 0;
 		errorSymbol = 0;
-		//解码前的硬判决，只看信息比特部分
+		//Hard decision before decoding, only look at the Information bit part
 		for (j = 0; j < (NmoinsK - _ShortenBits) / ModulationType; ++j)
 		{
-			for (m = 0; m < ModulationType; m++)//判定modulationtype个比特
+			for (m = 0; m < ModulationType; m++)//Determine modulationtype bits
 			{
 				errorsymbolflag = 0;
 				demodout[i*BitsOverChannel + ModulationType * j + m] = (demodseq[i*BitsOverChannel + ModulationType * j + m] > 0) ? 1 : 0;
 				
-				if (demodout[i*BitsOverChannel + ModulationType * j + m] != encodeseq[i*BitsOverChannel + ModulationType * j + m])//encodeseq放置outputbits大小为bitsoverchannel
-				//if (demodout[i*BitsOverChannel + ModulationType * j + m] != encodeseq[i*(NmoinsK - _ShortenBits) + ModulationType * j + m])//encodeseq放置inputbits大小为NmoinsK - _ShortenBits
+				if (demodout[i*BitsOverChannel + ModulationType * j + m] != encodeseq[i*BitsOverChannel + ModulationType * j + m])//encodeseq places outputbits size as bitsoverchannel
+				//if (demodout[i*BitsOverChannel + ModulationType * j + m] != encodeseq[i*(NmoinsK - _ShortenBits) + ModulationType * j + m])//encodeseq puts input bits size as NmoinsK - _ShortenBits
 				{
 					errorBits++;
 					errorsymbolflag++;
@@ -423,10 +423,10 @@ ModStatistic CModulate::ModCalErr(float *demodseq, int8_t *encodeseq)
 			}
 			if (errorsymbolflag > 0)
 			{
-				errorSymbol++;//如果modulationtype个比特里有错误，误符号+1
+				errorSymbol++;//If there is an error in the modulationtype bit, the error sign is +1
 			}
 		}
-		//一帧统计一次
+		//One frame statistics
 		if (errorBits > 0)
 		{
 			ModTest.ErrorBits += errorBits;
@@ -458,7 +458,7 @@ ModStatistic CModulate::ModCalErr(float *demodseq, int8_t *encodeseq)
 	//}
 
 
-	//	eeout << "input=[ ";//通过awgn信道后的值，information+check
+	//	eeout << "input=[ ";//The value after passing through the awgn channel, information+check
 	//	for (j = 0; j < l; j++)
 
 	//	{
@@ -468,7 +468,7 @@ ModStatistic CModulate::ModCalErr(float *demodseq, int8_t *encodeseq)
 	//	eeout << "];";
 	//	eeout << endl;
 
-	//	eeout << "output=[ ";//通过awgn信道后的值，information+check
+	//	eeout << "output=[ ";//The value after passing through the awgn channel, information+check
 	//	for (j = 0; j < k; j++)
 
 	//	{

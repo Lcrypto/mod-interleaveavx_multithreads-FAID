@@ -51,7 +51,7 @@ void CSimulate::Initial(Parameter_Simulation& p, int index)
     /*
     DATE:20190306
     Modualte:the modulated bits number are the realtransmited bits
-    速率匹配：打孔和shorten实际没有参与
+    Rate matching: Punching and shortening are not actually involved
     */
     modulate->Initial(ldpc->m_frame * (ldpc->m_N - ldpc->m_PunLen - ldpc->m_ShortenLen));
     channel->RandomSeed = seed[index];
@@ -96,7 +96,7 @@ void CSimulate::Run()
     ModStatistic ModTest;
 #if BF_ITER_COUNT == 1
     ofstream iterOut;
-    int BFiters_[51] = { 0 }; // 统计 BF 迭代次数
+    int BFiters_[51] = { 0 }; // Statistics BF Iterations
 #endif
     int BFiter;
 
@@ -106,24 +106,24 @@ void CSimulate::Run()
     ldpc->GenMsgSeq();
     ldpc->Encode();
 #endif
-    /*编码是固定的，因此只需要调制及交织1次*/
-    //编码后打孔的序列存入outputbits进入交织器，存入modulate->interleaveseq，outputbit存放格式32信息+32校验
+    /*The encoding is fixed, so only modulation and interleaving are required once*/
+    //The punctured sequence after encoding is stored in outputbits and enters the interleaver, and is stored in modulate->interleaveseq. The outputbit stores the format 32 information + 32 checksums
     if (modulate->ModulationType == 1) {
         modulate->BPSKModulation(ldpc->outputBits);
     } else {
         modulate->BeforeModulationInterleaver(ldpc->outputBits);
-        modulate->Modulation(modulate->InterLeaveSeq); //调制输入为交织后的interleaveseq
+        modulate->Modulation(modulate->InterLeaveSeq); //The modulation input is interleaved interleaveseq
     }
     for (i = 0; i < 50; ++i) {
 
         TestFrame += 32;
 
         if (modulate->ModulationType == 1) {
-            // 设计思想是：初始化阶段完成编码调制以后，由于是BPSK调制，因此我们只是取幅度，所以不需要解调了。
-            channel->BPSKAWGNChannel(modulate->BPSKModSeq, sigma); //一个一个出
+            // The design idea is: after the coding modulation is completed in the initialization stage, since it is BPSK modulation, we only take the amplitude, so there is no need for demodulation.
+            channel->BPSKAWGNChannel(modulate->BPSKModSeq, sigma); One by one
             ldpc->float2LimitChar_4bit(ldpc->fixInput, channel->BPSKSymbol, scale, BitsOverChannel * 32);
         } else {
-            channel->AWGNChannel(modulate->ModSeq, sigma / sqrt(2)); // 复信号虚实部各加噪声方差为原来的1/2
+            channel->AWGNChannel(modulate->ModSeq, sigma / sqrt(2)); // The variance of the noise added to the real and imaginary parts of the complex signal is 1/2 of the original
             modulate->Demodulation(channel->SymbolSeq);
             modulate->AfterDeModulationDeInterleaver();
             // ModTest = modulate->ModCalErr(modulate->DeInterLeaveSeq, ldpc->outputBits); // 32*bitsoverchannel
@@ -163,7 +163,7 @@ void CSimulate::Run()
             break;
         }
 
-        Test = ldpc->CalculateErrors(modulate->DeInterLeaveSeq, ldpc->fixInput, collectflag); // 32个码字的串行比较
+        Test = ldpc->CalculateErrors(modulate->DeInterLeaveSeq, ldpc->fixInput, collectflag); // Serial comparison of 32 code words
         ErrorFrame += Test.ErrorFrame;
         ErrorBits += Test.ErrorBits;
         LT3ErrBitFrame += Test.LT3ErrBitFrame;
@@ -180,8 +180,8 @@ void CSimulate::Run()
 }
 ///*
 // date:20190415
-//如果出现某一帧错误比特小于3（自行设定的固定值）
-//则将该线程的迭代次数增加到60(decode1()中自行设定）
+//If a frame has an error bit less than 3 (a fixed value set by yourself)
+//Then increase the number of iterations of this thread to 60 (set by yourself in decode1())
 //*/
 //       if (LT3ErrBitFrame > 0)
 //		{
@@ -201,8 +201,8 @@ void CSimulate::Run()
 //				TestFrame += 32;
 //				channel->BPSKAWGNChannel(modulate->BPSKModSeq, sigma);
 //				ldpc->float2LimitChar_6bit(ldpc->fixInput, channel->BPSKSymbol, scale;, BitsOverChannel
-//* 32); 				ldpc->Decode1();//如果出现某一帧错误小于3比特，则将迭代次数增加为60，重新译码
-// Test = ldpc->CalculateErrors(channel->BPSKSymbol, ldpc->fixInput);//32个码字的串行比较
+//* 32); 				ldpc->Decode1();// If a frame error is less than 3 bits, the number of iterations is increased to 60 and the decoding is repeated.
+// Test = ldpc->CalculateErrors(channel->BPSKSymbol, ldpc->fixInput);//Serial comparison of 32 code words
 // ErrorFrame += Test.ErrorFrame; 				ErrorBits += Test.ErrorBits;
 // LT3ErrBitFrame
 // += Test.LT3ErrBitFrame;
@@ -268,7 +268,7 @@ int CSimulate::Start()
 
     // cout << "start  start_thread" << endl;
     // getchar();
-    if (pthread_create(&pid, NULL, start_thread, (void*)this) != 0) //创建线程
+    if (pthread_create(&pid, NULL, start_thread, (void*)this) != 0) //Creating a Thread
     {
         std::cout << "pthread_create error\n";
         getchar();

@@ -1,5 +1,5 @@
 #include "CLDPC.h"
-//用于测试的固定码字
+//Fixed codewords for testing
 
 int CodeWord_sym[_NoVar] = {0};
 

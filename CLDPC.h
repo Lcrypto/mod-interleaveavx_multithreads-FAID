@@ -111,19 +111,19 @@ class CLDPC {
 public:
     double m_Rate; // code ratio
     int8_t* inputBits; // Information bits
-    int* errorbitblock; //错误bit所在的块
-    int* errorbitindex; //错误bit所在块的位置
-    int* errorcheckblock; //错误check所在的块
-    int* errorcheckindex; //错误check所在块的位置
-    float* errorfloat; //错误比特对应过信道后的值
-    int* errorchar; //错误比特量化后的值
-    int8_t* outputBits; // Encoder ouput 去除打孔和shorten后的编码信息
-    __m256i* var_nodes; // AVX decoder for store LLR 加上puncture和shorten的似然比
+    int* errorbitblock; //The block where the error bit is located
+    int* errorbitindex; //The location of the block where the error bit is located
+    int* errorcheckblock; //The block where the error check is located
+    int* errorcheckindex; //The location of the block where the error check is located
+    float* errorfloat; //The value of the error bit after passing through the channel
+    int* errorchar; //The quantized value of the error bit
+    int8_t* outputBits; // Encoder ouput removes the encoding information after puncturing and shortening
+    __m256i* var_nodes; // AVX decoder for store LLR plus likelihood ratios for puncture and shorten
     __m256i** p_vn_adr; // The pointer for LLR
     __m256i* var_msgs; // Lmn
     __m256i* encoder_varnodes; // for parallel encoding
-    int8_t* decodedBits; // hard decision bits，顺序存储各帧
-    int8_t* fixInput; // fixed LLR for the length is N*m_frames;除去puncture和shorten的原始的对数似然比
+    int8_t* decodedBits; // hard decision bits, sequential storage of each frame
+    int8_t* fixInput; // fixed LLR for the length is N*m_frames; remove the original log-likelihood ratio of puncture and shorten
     int8_t* VN_weight_; // length: _NoVar
 
     int nb_iteration; // Maximum iterations

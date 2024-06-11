@@ -101,11 +101,11 @@ void CLDPC::Encode()
         uchar_itranspose_avx(
             (TYPE*)(encodedBits + _PunctureBits), (TYPE*)outputBits, (NmoinsK - _PunctureBits - _ShortenBits));
     } else {
-        char* ptr = (char*)(encodedBits + _PunctureBits); //把指针的起始位置放在puncture后
+        char* ptr = (char*)(encodedBits + _PunctureBits); //Put the starting position of the pointer after puncture
         for (i = 0; i < (NmoinsK - _PunctureBits - _ShortenBits); i += 1) {
             for (j = 0; j < 32; j += 1) {
                 outputBits[j * (NmoinsK - _PunctureBits - _ShortenBits) + i] = (ptr[32 * i
-                    + j]); // outputBits为编码后去除打孔和shorten，在outputbits中填充去除打孔和shorten后的编码信息
+                    + j]); // outputBits is the encoding information after puncturing and shortening is removed, and outputbits is filled with the encoding information after puncturing and shortening is removed.
             }
         }
     }
@@ -137,7 +137,7 @@ void CLDPC::Encode()
     //		encodeout[l] = (int)outputBits[i*BitsOverChannel + j];
     //		l++;
     //	}
-    //	enout << "encodeout: ";//通过awgn信道后的值，information+check
+    //	enout << "encodeout: ";//The value after passing through the awgn channel, information+check
     //	for (j = 0; j < l; j++)
     //	{
     //		enout << encodeout[j] << "\t";
@@ -155,7 +155,7 @@ void CLDPC::Encode()
 }
 
 /**
- * @brief 读取固定码字，outputbits 中是先交织存储信息位，再交织存储校验位
+ * @brief Read the fixed codeword, the output bits are first interleaved to store the information bits, then the check bits.
  * @date 2022-02-22
  * @author ZhangYifan
  *
@@ -183,11 +183,11 @@ void CLDPC::FakeEncoder()
         uchar_itranspose_avx(
             (TYPE*)(encodedBits + _PunctureBits), (TYPE*)outputBits, (NmoinsK - _PunctureBits - _ShortenBits));
     } else {
-        char* ptr = (char*)(encodedBits + _PunctureBits); //把指针的起始位置放在puncture后
+        char* ptr = (char*)(encodedBits + _PunctureBits); //Put the starting position of the pointer after puncture
         for (i = 0; i < (NmoinsK - _PunctureBits - _ShortenBits); i += 1) {
             for (j = 0; j < 32; j += 1) {
                 outputBits[j * (NmoinsK - _PunctureBits - _ShortenBits) + i] = (ptr[32 * i + j]);
-                // outputBits为编码后去除打孔和shorten，在outputbits中填充去除打孔和shorten后的编码信息
+                // outputBits is the encoding information after puncturing and shortening is removed, and outputbits is filled with the encoding information after puncturing and shortening is removed.
             }
         }
     }
@@ -209,7 +209,7 @@ void CLDPC::FakeEncoder()
 /*
         Decode
         parallel decoing 32 codewords
-        迭代次数读取Profile
+        Iterations to read Profile
 */
 void CLDPC::Decode()
 {
@@ -221,7 +221,7 @@ void CLDPC::Decode()
     int factor_1 = p_simulation.Factor_1;
     int factor_2 = p_simulation.Factor_2;
     const TYPE zero = VECTOR_ZERO;
-    //#define SAT_NEG_MSG(-(0x0001 << (NB_BITS_MESSAGES - 1)) + 1) -31(6bit量化）
+    //#define SAT_NEG_MSG(-(0x0001 << (NB_BITS_MESSAGES - 1)) + 1) -31(6bit quantization)
     const TYPE minMesg = VECTOR_SET1(SAT_NEG_MSG);
     size_t i, j, z;
 
@@ -229,16 +229,16 @@ void CLDPC::Decode()
     for (i = 0; i < MESSAGE; ++i) {
         var_msgs[i] = zero;
     }
-    // The information part 交织 解调初始似然比排列格式
-    // 第一个码字第一个对数似然比，第二个码字第一个，……第32个码字第一个，第一个码字第二个……
+    // The information part is interleaved. The demodulation initial likelihood ratio is arranged in a format
+    // The first codeword has the first log-likelihood ratio, the second codeword has the first, ... the 32nd codeword has the first, the first codeword has the second, ...
     if ((NmoinsK - _PunctureBits - _ShortenBits) % 32 == 0) {
         uchar_transpose_avx(
             (TYPE*)fixInput, (TYPE*)(var_nodes + _PunctureBits), (NmoinsK - _PunctureBits - _ShortenBits));
     } else {
-        ptr = (int8_t*)(var_nodes + _PunctureBits); //指针起始位置在puncture后，即打孔在最前
+        ptr = (int8_t*)(var_nodes + _PunctureBits); //The pointer starts after the puncture, which means the puncture is at the front.
         for (i = 0; i < (NmoinsK - _PunctureBits - _ShortenBits); ++i) {
             for (j = 0; j < 32; ++j) {
-                //除去puncture和shorten的原始似然比
+                //Original likelihood ratio without puncture and shortening
                 ptr[i * 32 + j] = fixInput[j * (NmoinsK - _PunctureBits - _ShortenBits) + i];
             }
         }
@@ -257,12 +257,12 @@ void CLDPC::Decode()
         }
     }
 
-    // // puncture 最前 llr=0
+    // // puncture  llr=0
     // for (i = 0; i < _PunctureBits; ++i) {
     //     var_nodes[i] = zero;
     // }
 
-    // // shorten 最后 llr=minMesg
+    // // shorten last llr=minMesg
     // for (i = NmoinsK - _ShortenBits; i < NmoinsK; ++i) {
     //     var_nodes[i] = minMesg;
     // }
@@ -273,7 +273,7 @@ void CLDPC::Decode()
 
     int nombre_iterations = nb_iteration;
     // Fixed iterations
-    while (nombre_iterations--) { //一次迭代开始，没有动态终止
+    while (nombre_iterations--) { //An iteration starts, without dynamic termination
         TYPE* p_msg1r = var_msgs; // read Lmn
         TYPE* p_msg1w = var_msgs; // write Lmn
 #if PETIT == 1
@@ -298,8 +298,8 @@ void CLDPC::Decode()
 
 #if (DEG_1 & 0x01) == 1
             const unsigned char sign8 = 0x80; // sign8 =128=1000000B
-            // isign =12*16=11000000B,之所以使用的是X100,0000,是为了如果他的符号为是0，则在进行
-            // _mm_sign_epi8运算时，符合要求。
+            // isign =12*16=11000000B, the reason why X100,0000 is used is that if its sign is 0, then
+            // _mm_sign_epi8 operation meets the requirements.
             const unsigned char isign8 = 0xC0;
             const TYPE msign8 = VECTOR_SET1(sign8);
             const TYPE misign8 = VECTOR_SET1(isign8);
@@ -340,7 +340,7 @@ void CLDPC::Decode()
             }
 
             TYPE norm_1 = VECTOR_SET2(factor_1);
-            // 个人理解，先乘后除，为了提高精度。
+            // Personally, I think we should multiply first and then divide to improve the accuracy.
             TYPE h_min1 = VECTOR_UNPACK_HIGH(min1); // a8 00 a9 00...a15 00
             TYPE l_min1 = VECTOR_UNPACK_LOW(min1); // a1 00 a2 00...a7 00
                                                    //
@@ -2265,7 +2265,7 @@ void CLDPC::Decode()
                 is the whole codeword,and the statistic result of BER and FER is the whole codeword
                 it is different from the Program for 5G platform
         */
-    if ((NOEUD) % 32 == 0) //解交织
+    if ((NOEUD) % 32 == 0) //Deinterleaving
     {
         uchar_itranspose_avx((TYPE*)var_nodes, (TYPE*)decodedBits, (NOEUD));
     } else {
@@ -2294,7 +2294,7 @@ void CLDPC::Decode()
     //		for (int j = 0; j < 32; j += 1)
     //		{
     //			decodedBits[j *(NmoinsK - _ShortenBits) + i] = (ptr[32 * i + j] >
-    // 0);//varnode0存第一帧第一个信息 varnode1存第二帧第一个信息 varnode32存第一帧第二个信息
+    // 0);//varnode0 stores the first information of the first frame, varnode1 stores the first information of the second frame, and varnode32 stores the second information of the first frame.
     //		}
     //	}
     //}
@@ -2321,11 +2321,11 @@ void CLDPC::Decode1() //固定迭代次数为60的译码过程
         uchar_transpose_avx(
             (TYPE*)fixInput, (TYPE*)(var_nodes + _PunctureBits), (NmoinsK - _PunctureBits - _ShortenBits));
     } else {
-        ptr = (int8_t*)(var_nodes + _PunctureBits); //指针起始位置在puncture后，即打孔在最前
+        ptr = (int8_t*)(var_nodes + _PunctureBits); //The pointer starts after the puncture, which means the puncture is at the front.
         for (i = 0; i < (NmoinsK - _PunctureBits - _ShortenBits); ++i) {
             for (int j = 0; j < 32; ++j) {
                 ptr[i * 32 + j]
-                    = fixInput[j * (NmoinsK - _PunctureBits - _ShortenBits) + i]; //除去puncture和shorten的原始似然比
+                    = fixInput[j * (NmoinsK - _PunctureBits - _ShortenBits) + i]; //Original likelihood ratio without puncture and shortening
             }
         }
     }
@@ -2343,18 +2343,18 @@ void CLDPC::Decode1() //固定迭代次数为60的译码过程
         }
     }
 
-    // puncture 最前 llr=0
+    // puncture  llr=0
     for (i = 0; i < _PunctureBits; ++i) {
         var_nodes[i] = zero;
     }
-    // shorten 最后 llr=minMesg
+    // shorten last llr=minMesg
     for (i = NmoinsK - _ShortenBits; i < NmoinsK; ++i) {
         var_nodes[i] = minMesg;
     }
 
     int nombre_iterations = nb_iteration;
     // Fixed iterations
-    while (nombre_iterations--) { //一次迭代开始，没有动态终止
+    while (nombre_iterations--) { //An iteration starts, without dynamic termination
         TYPE* p_msg1r = var_msgs; // read Lmn
         TYPE* p_msg1w = var_msgs; // write Lmn
 #if PETIT == 1
@@ -2380,8 +2380,8 @@ void CLDPC::Decode1() //固定迭代次数为60的译码过程
 #if (DEG_1 & 0x01) == 1
             const unsigned char sign8 = 0x80; // sign8 =128=1000000B
             const unsigned char isign8
-                = 0xC0; // isign =12*16=11000000B,之所以使用的是X100,0000,是为了如果他的符号为是0，则在进行
-                        //_mm_sign_epi8运算时，符合要求。
+                = 0xC0; // isign =12*16=11000000B, the reason why X100,0000 is used is that if its sign is 0, then
+                        //_mm_sign_epi8 operation meets the requirements.
             const TYPE msign8 = VECTOR_SET1(sign8);
             const TYPE misign8 = VECTOR_SET1(isign8);
 #else
@@ -2424,7 +2424,7 @@ void CLDPC::Decode1() //固定迭代次数为60的译码过程
             }
 
             TYPE norm_1 = VECTOR_SET2(factor_1);
-            // 个人理解，先乘后除，为了提高精度。
+            // Personally, I think we should multiply first and then divide to improve the accuracy.
             TYPE h_min1 = VECTOR_UNPACK_HIGH(min1); // a8 00 a9 00...a15 00
             TYPE l_min1 = VECTOR_UNPACK_LOW(min1); // a1 00 a2 00...a7 00
                                                    //
@@ -4383,7 +4383,7 @@ void CLDPC::Decode1() //固定迭代次数为60的译码过程
 }
 
 void CLDPC::float2LimitChar_6bit(int8_t* output, const float* input, float scale,
-    int length) // float2LimitChar_8bit(去除shorten和puncture原始似然比,
+    int length) // float2LimitChar_8bit (remove shorten and puncture original likelihood ratio,
                 // channel->BPSKSymbol, scale, BitsOverChannel * 32);
 // change dataform from float to int8_t
 
@@ -4399,7 +4399,7 @@ void CLDPC::float2LimitChar_6bit(int8_t* output, const float* input, float scale
     __m256 scale_256;
     __m256 llra_in_256, llrb_in_256;
     __m256i llra_in_256i, llrb_in_256i;
-    __m128i* output_128i = (__m128i*)output; //强制类型转换
+    __m128i* output_128i = (__m128i*)output; //Type conversion
     __m128i llra_in_128i, llrb_in_128i, llrab_in_128i;
 
     int8_t output_tmp;
@@ -4418,36 +4418,36 @@ void CLDPC::float2LimitChar_6bit(int8_t* output, const float* input, float scale
     {
 
         llra_in_256 = _mm256_loadu_ps(
-            input + i); // float是32位比特，这个是两个并行的计算 a存8float=8*32位=8*（32/8）字节=32字节
+            input + i); // Float is 32 bits, this is two parallel calculations a stores 8 float = 8 * 32 bits = 8 * (32 / 8) bytes = 32 bytes
         // llra -0.79 0.61 -1.7 0.39 0.97 0.46 0.21 0.95
-        llrb_in_256 = _mm256_loadu_ps(input + i + 8); // b存8float
+        llrb_in_256 = _mm256_loadu_ps(input + i + 8); // b stores 8 float
         // llrb 0.93 0.26 0.66 -0.52 1.48 -0.8 0.56 -0.35
-        // AVX版本
+        // AVX Version
         // load 16 float data
 
         // absmax_float = absmax(llra_in_256, llrb_in_256);
-        scale_256 = _mm256_set1_ps(scale); // scale 是一个标量，用来放大信号的 存了8个float 值为32
+        scale_256 = _mm256_set1_ps(scale); // scale is a scalar used to amplify the signal. It stores 8 float values ​​of 32.
 
-        llra_in_256 = _mm256_mul_ps(llra_in_256, scale_256); // llra 8个float 与scale_256 8个float执行SIMD乘法。
+        llra_in_256 = _mm256_mul_ps(llra_in_256, scale_256); // llra performs SIMD multiplication of 8 floats with scale_256 8 floats.
         // llra -25.43 19.54 -57.50
-        llrb_in_256 = _mm256_mul_ps(llrb_in_256, scale_256); //一个8
+        llrb_in_256 = _mm256_mul_ps(llrb_in_256, scale_256); //A 8
 
-        //执行乘法之后0.5 -0.5都会被量化为0 四舍五入
-        llra_in_256i = _mm256_cvtps_epi32(llra_in_256); // float to int32 把8个float转为8个int32
+        //After multiplication, 0.5 -0.5 will be quantized to 0 and rounded.
+        llra_in_256i = _mm256_cvtps_epi32(llra_in_256); // float to int32 Convert 8 floats to 8 int32s
 
         // m256i_i32 -25 19 -57
         llrb_in_256i = _mm256_cvtps_epi32(llrb_in_256);
         //_mm256_cvttps_epi32
 
-        /*__m128i _mm_packs_epi32 (__m128i a, __m128i b);将a和b中的8个int32打包成8个int16 a0 a1 a2 a3 b0 b1 b2 b3*/
+        /*__m128i _mm_packs_epi32 (__m128i a, __m128i b); Pack the 8 int32 in a and b into 8 int16 a0 a1 a2 a3 b0 b1 b2 b3*/
         llra_in_128i = _mm_packs_epi32(
             _mm256_extractf128_si256(llra_in_256i, 0), _mm256_extractf128_si256(llra_in_256i, 1)); // in32 to int16
         // llra m256i_i16 -25 19 -57
         llrb_in_128i
             = _mm_packs_epi32(_mm256_extractf128_si256(llrb_in_256i, 0), _mm256_extractf128_si256(llrb_in_256i, 1));
         // llrb m256i_i16 29 8 21
-        llrab_in_128i = _mm_packs_epi16(llra_in_128i, llrb_in_128i); // int16 to int8（超过8位=255，否则本身）
-        // llrab m128i_i8 -25 19 -57……29 8 21……一共16个数
+        llrab_in_128i = _mm_packs_epi16(llra_in_128i, llrb_in_128i); // int16 to int8 (more than 8 bits = 255, otherwise itself)
+        // llrab m128i_i8 -25 19 -57...29 8 21...a total of 16 numbers
 
         llrab_in_128i = _mm_min_epi8(llrab_in_128i, limit0_128i);
         llrab_in_128i = _mm_max_epi8(llrab_in_128i, limit1_128i); // set limitation(6bit)
@@ -4462,7 +4462,7 @@ void CLDPC::float2LimitChar_6bit(int8_t* output, const float* input, float scale
 }
 
 void CLDPC::float2LimitChar_5bit(int8_t* output, const float* input, float scale,
-    int length) // float2LimitChar_8bit(去除shorten和puncture原始似然比, channel->BPSKSymbol, scale, BitsOverChannel *
+    int length) // float2LimitChar_8bit (remove shorten and puncture original likelihood ratio, channel->BPSKSymbol, scale, BitsOverChannel *
                 // 32); change dataform from float to int8_t
 
 {
@@ -4476,7 +4476,7 @@ void CLDPC::float2LimitChar_5bit(int8_t* output, const float* input, float scale
     __m256 scale_256;
     __m256 llra_in_256, llrb_in_256;
     __m256i llra_in_256i, llrb_in_256i;
-    __m128i* output_128i = (__m128i*)output; //强制类型转换
+    __m128i* output_128i = (__m128i*)output; //Type conversion
     __m128i llra_in_128i, llrb_in_128i, llrab_in_128i;
 
     int8_t output_tmp;
@@ -4484,30 +4484,30 @@ void CLDPC::float2LimitChar_5bit(int8_t* output, const float* input, float scale
     for (i = 0; i + 15 < length; i += 16) // i=0 16 32……
     {
         llra_in_256 = _mm256_loadu_ps(
-            input + i); // float是32位比特，这个是两个并行的计算 a存8float=8*32位=8*（32/8）字节=32字节
+            input + i); // Float is 32 bits, this is two parallel calculations a stores 8 float = 8 * 32 bits = 8 * (32 / 8) bytes = 32 bytes
 
-        llrb_in_256 = _mm256_loadu_ps(input + i + 8); // b存8float
-                                                      // AVX版本
+        llrb_in_256 = _mm256_loadu_ps(input + i + 8); // b stores 8 float
+                                                      // AVX Version
                                                       // load 16 float data
 
-        scale_256 = _mm256_set1_ps(scale); // scale 是一个标量，用来放大信号的 存了8个float 值为32
+        scale_256 = _mm256_set1_ps(scale); // scale is a scalar used to amplify the signal. It stores 8 float values ​​of 32.
 
-        llra_in_256 = _mm256_mul_ps(llra_in_256, scale_256); // llra 8个float 与scale_256 8个float执行SIMD乘法。
+        llra_in_256 = _mm256_mul_ps(llra_in_256, scale_256); // llra performs SIMD multiplication of 8 floats with scale_256 8 floats.
 
-        llrb_in_256 = _mm256_mul_ps(llrb_in_256, scale_256); //一个8
+        llrb_in_256 = _mm256_mul_ps(llrb_in_256, scale_256); //A 8
 
-        llra_in_256i = _mm256_cvttps_epi32(llra_in_256); // float to int32 把8个float转为8个int32
+        llra_in_256i = _mm256_cvttps_epi32(llra_in_256); // float to int32 Convert 8 floats to 8 int32s
 
         llrb_in_256i = _mm256_cvttps_epi32(llrb_in_256);
 
-        /*__m128i _mm_packs_epi32 (__m128i a, __m128i b);将a和b中的8个int32打包成8个int16 a0 a1 a2 a3 b0 b1 b2 b3*/
+        /*__m128i _mm_packs_epi32 (__m128i a, __m128i b); Pack the 8 int32 in a and b into 8 int16 a0 a1 a2 a3 b0 b1 b2 b3*/
         llra_in_128i = _mm_packs_epi32(
             _mm256_extractf128_si256(llra_in_256i, 0), _mm256_extractf128_si256(llra_in_256i, 1)); // in32 to int16
 
         llrb_in_128i
             = _mm_packs_epi32(_mm256_extractf128_si256(llrb_in_256i, 0), _mm256_extractf128_si256(llrb_in_256i, 1));
 
-        llrab_in_128i = _mm_packs_epi16(llra_in_128i, llrb_in_128i); // int16 to int8（超过8位=255，否则本身）
+        llrab_in_128i = _mm_packs_epi16(llra_in_128i, llrb_in_128i); // int16 to int8 (more than 8 bits = 255, otherwise itself)
 
         llrab_in_128i = _mm_min_epi8(llrab_in_128i, limit0_128i);
         llrab_in_128i = _mm_max_epi8(llrab_in_128i, limit1_128i); // set limitation(5bit)
@@ -4522,7 +4522,7 @@ void CLDPC::float2LimitChar_5bit(int8_t* output, const float* input, float scale
 }
 
 void CLDPC::float2LimitChar_4bit(int8_t* output, const float* input, float scale,
-    int length) // float2LimitChar_8bit(去除shorten和puncture原始似然比, channel->BPSKSymbol, scale, BitsOverChannel *
+    int length) // float2LimitChar_8bit (remove shorten and puncture original likelihood ratio, channel->BPSKSymbol, scale, BitsOverChannel *
                 // 32); change dataform from float to int8_t
 
 {
@@ -4530,13 +4530,13 @@ void CLDPC::float2LimitChar_4bit(int8_t* output, const float* input, float scale
     int limit = 7;
     int i;
     const __m128i limit0_128i = _mm_set1_epi8(7);
-    const __m128i limit1_128i = _mm_set1_epi8(-7); // -7 会影响性能！
+    const __m128i limit1_128i = _mm_set1_epi8(-7); // -7 will affect performance!
     // float	scale =5.8;
     // (float)(1 << qbits);
     __m256 scale_256;
     __m256 llra_in_256, llrb_in_256;
     __m256i llra_in_256i, llrb_in_256i;
-    __m128i* output_128i = (__m128i*)output; //强制类型转换
+    __m128i* output_128i = (__m128i*)output; //Type conversion
     __m128i llra_in_128i, llrb_in_128i, llrab_in_128i;
 
     int8_t output_tmp;
@@ -4544,30 +4544,30 @@ void CLDPC::float2LimitChar_4bit(int8_t* output, const float* input, float scale
     for (i = 0; i + 15 < length; i += 16) // i=0 16 32……
     {
         llra_in_256 = _mm256_loadu_ps(
-            input + i); // float是32位比特，这个是两个并行的计算 a存8float=8*32位=8*（32/8）字节=32字节
+            input + i); // Float is 32 bits, this is two parallel calculations a stores 8 float = 8 * 32 bits = 8 * (32 / 8) bytes = 32 bytes
 
-        llrb_in_256 = _mm256_loadu_ps(input + i + 8); // b存8float
-                                                      // AVX版本
+        llrb_in_256 = _mm256_loadu_ps(input + i + 8); // b stores 8 float
+                                                      // AVX Version
                                                       // load 16 float data
 
-        scale_256 = _mm256_set1_ps(scale); // scale 是一个标量，用来放大信号的 存了8个float 值为32
+        scale_256 = _mm256_set1_ps(scale); // scale is a scalar used to amplify the signal. It stores 8 float values ​​of 32.
 
-        llra_in_256 = _mm256_mul_ps(llra_in_256, scale_256); // llra 8个float 与scale_256 8个float执行SIMD乘法。
+        llra_in_256 = _mm256_mul_ps(llra_in_256, scale_256); // llra performs SIMD multiplication of 8 floats with scale_256 8 floats.
 
-        llrb_in_256 = _mm256_mul_ps(llrb_in_256, scale_256); //一个8
+        llrb_in_256 = _mm256_mul_ps(llrb_in_256, scale_256); //A 8
 
-        llra_in_256i = _mm256_cvttps_epi32(llra_in_256); // float to int32 把8个float转为8个int32
+        llra_in_256i = _mm256_cvttps_epi32(llra_in_256); // float to int32 Convert 8 floats to 8 int32s
 
         llrb_in_256i = _mm256_cvttps_epi32(llrb_in_256);
 
-        /*__m128i _mm_packs_epi32 (__m128i a, __m128i b);将a和b中的8个int32打包成8个int16 a0 a1 a2 a3 b0 b1 b2 b3*/
+        /*__m128i _mm_packs_epi32 (__m128i a, __m128i b); Pack the 8 int32 in a and b into 8 int16 a0 a1 a2 a3 b0 b1 b2 b3*/
         llra_in_128i = _mm_packs_epi32(
             _mm256_extractf128_si256(llra_in_256i, 0), _mm256_extractf128_si256(llra_in_256i, 1)); // in32 to int16
 
         llrb_in_128i
             = _mm_packs_epi32(_mm256_extractf128_si256(llrb_in_256i, 0), _mm256_extractf128_si256(llrb_in_256i, 1));
 
-        llrab_in_128i = _mm_packs_epi16(llra_in_128i, llrb_in_128i); // int16 to int8（超过8位=255，否则本身）
+        llrab_in_128i = _mm_packs_epi16(llra_in_128i, llrb_in_128i); // int16 to int8 (more than 8 bits = 255, otherwise itself)
 
         llrab_in_128i = _mm_min_epi8(llrab_in_128i, limit0_128i);
         llrab_in_128i = _mm_max_epi8(llrab_in_128i, limit1_128i); // set limitation(5bit)
@@ -4582,7 +4582,7 @@ void CLDPC::float2LimitChar_4bit(int8_t* output, const float* input, float scale
 }
 
 void CLDPC::float2LimitChar_3bit(int8_t* output, const float* input, float scale,
-    int length) // float2LimitChar_8bit(去除shorten和puncture原始似然比, channel->BPSKSymbol, scale, BitsOverChannel *
+    int length) // float2LimitChar_8bit (remove shorten and puncture original likelihood ratio, channel->BPSKSymbol, scale, BitsOverChannel *
                 // 32); change dataform from float to int8_t
 
 {
@@ -4596,7 +4596,7 @@ void CLDPC::float2LimitChar_3bit(int8_t* output, const float* input, float scale
     __m256 scale_256;
     __m256 llra_in_256, llrb_in_256;
     __m256i llra_in_256i, llrb_in_256i;
-    __m128i* output_128i = (__m128i*)output; //强制类型转换
+    __m128i* output_128i = (__m128i*)output; //Type conversion
     __m128i llra_in_128i, llrb_in_128i, llrab_in_128i;
 
     int8_t output_tmp;
@@ -4604,30 +4604,30 @@ void CLDPC::float2LimitChar_3bit(int8_t* output, const float* input, float scale
     for (i = 0; i + 15 < length; i += 16) // i=0 16 32……
     {
         llra_in_256 = _mm256_loadu_ps(
-            input + i); // float是32位比特，这个是两个并行的计算 a存8float=8*32位=8*（32/8）字节=32字节
+            input + i); // Float is 32 bits, this is two parallel calculations a stores 8 float = 8 * 32 bits = 8 * (32 / 8) bytes = 32 bytes
 
-        llrb_in_256 = _mm256_loadu_ps(input + i + 8); // b存8float
-                                                      // AVX版本
+        llrb_in_256 = _mm256_loadu_ps(input + i + 8); // b stores 8 float
+                                                      // AVX Version
                                                       // load 16 float data
 
-        scale_256 = _mm256_set1_ps(scale); // scale 是一个标量，用来放大信号的 存了8个float 值为32
+        scale_256 = _mm256_set1_ps(scale); // scale is a scalar used to amplify the signal. It stores 8 float values ​​of 32.
 
-        llra_in_256 = _mm256_mul_ps(llra_in_256, scale_256); // llra 8个float 与scale_256 8个float执行SIMD乘法。
+        llra_in_256 = _mm256_mul_ps(llra_in_256, scale_256); // llra performs SIMD multiplication of 8 floats with scale_256 8 floats.
 
-        llrb_in_256 = _mm256_mul_ps(llrb_in_256, scale_256); //一个8
+        llrb_in_256 = _mm256_mul_ps(llrb_in_256, scale_256); //A 8
 
-        llra_in_256i = _mm256_cvttps_epi32(llra_in_256); // float to int32 把8个float转为8个int32
+        llra_in_256i = _mm256_cvttps_epi32(llra_in_256); // float to int32 Convert 8 floats to 8 int32s
 
         llrb_in_256i = _mm256_cvttps_epi32(llrb_in_256);
 
-        /*__m128i _mm_packs_epi32 (__m128i a, __m128i b);将a和b中的8个int32打包成8个int16 a0 a1 a2 a3 b0 b1 b2 b3*/
+        /*__m128i _mm_packs_epi32 (__m128i a, __m128i b); Pack the 8 int32 in a and b into 8 int16 a0 a1 a2 a3 b0 b1 b2 b3*/
         llra_in_128i = _mm_packs_epi32(
             _mm256_extractf128_si256(llra_in_256i, 0), _mm256_extractf128_si256(llra_in_256i, 1)); // in32 to int16
 
         llrb_in_128i
             = _mm_packs_epi32(_mm256_extractf128_si256(llrb_in_256i, 0), _mm256_extractf128_si256(llrb_in_256i, 1));
 
-        llrab_in_128i = _mm_packs_epi16(llra_in_128i, llrb_in_128i); // int16 to int8（超过8位=255，否则本身）
+        llrab_in_128i = _mm_packs_epi16(llra_in_128i, llrb_in_128i); // int16 to int8 (more than 8 bits = 255, otherwise itself)
 
         llrab_in_128i = _mm_min_epi8(llrab_in_128i, limit0_128i);
         llrab_in_128i = _mm_max_epi8(llrab_in_128i, limit1_128i); // set limitation(5bit)
@@ -4657,21 +4657,21 @@ void CLDPC::float2LimitChar_2bit(int8_t* output, const float* input, float scale
     __m256 scale_256;
     __m256 llra_in_256, llrb_in_256;
     __m256i llra_in_256i, llrb_in_256i;
-    __m128i* output_128i = (__m128i*)output; //强制类型转换
+    __m128i* output_128i = (__m128i*)output; //Type conversion
     __m128i llra_in_128i, llrb_in_128i, llrab_in_128i;
 
     int8_t output_tmp;
     // float absmax_float;
     for (i = 0; i + 15 < length; i += 16) {
-        llra_in_256 = _mm256_loadu_ps(input + i); // float是32位比特，这个是两个并行的计算
+        llra_in_256 = _mm256_loadu_ps(input + i); // Float is 32 bits, this is two parallel calculations
         llrb_in_256 = _mm256_loadu_ps(input + i + 8);
-        // AVX版本
+        // AVX Version
         // load 16 float data
 
         // absmax_float = absmax(llra_in_256, llrb_in_256);
-        scale_256 = _mm256_set1_ps(scale); // scale 是一个标量，用来放大信号的。
+        scale_256 = _mm256_set1_ps(scale); // scale is a scalar used to amplify the signal.
         llra_in_256 = _mm256_mul_ps(llra_in_256, scale_256);
-        llrb_in_256 = _mm256_mul_ps(llrb_in_256, scale_256); //一个8
+        llrb_in_256 = _mm256_mul_ps(llrb_in_256, scale_256); //A 8
 
         llra_in_256i = _mm256_cvttps_epi32(llra_in_256); // float to int32
         llrb_in_256i = _mm256_cvttps_epi32(llrb_in_256);
@@ -4684,11 +4684,11 @@ void CLDPC::float2LimitChar_2bit(int8_t* output, const float* input, float scale
         llrab_in_128i = _mm_packs_epi16(llra_in_128i, llrb_in_128i); // int16 to int8
 
         // llrab_in_128i = _mm_cmpgt_epi8(zero,
-        // llrab_in_128i);//分别比较a的每个8bits整数是否大于b的对应位置的8bits整数，若大于，则返回-1(ff)，否则返回0。
+        // llrab_in_128i);//Compare each 8-bit integer of a to see if it is greater than the 8-bit integer at the corresponding position of b. If so, return -1 (ff), otherwise return 0.
         // llrab_in_128i = _mm_xor_si128(llrab_in_128i, bit_1_xor);//00000000xor00111111=00111111(63)
         // 11111111xor00111111=11000000(-64)
 
-        llrab_in_128i = _mm_min_epi8(llrab_in_128i, limit0_128i); //正数符号位为0 01111111
+        llrab_in_128i = _mm_min_epi8(llrab_in_128i, limit0_128i); //The sign bit of a positive number is 0 01111111
         llrab_in_128i = _mm_max_epi8(llrab_in_128i, limit1_128i); // set limitation +-31
 
         _mm_storeu_si128(output_128i++, llrab_in_128i);
@@ -4714,24 +4714,24 @@ void CLDPC::float2LimitChar_1bit(int8_t* output, const float* input, float scale
     // const __m128i bit_1_xor = _mm_set1_epi8(63);
     // float	scale =5.8;
     // (float)(1 << qbits);
-    __m256 scale_256; // 1bit需要非常大的scale值
+    __m256 scale_256; // 1 bit requires a very large scale value
     __m256 llra_in_256, llrb_in_256;
     __m256i llra_in_256i, llrb_in_256i;
-    __m128i* output_128i = (__m128i*)output; //强制类型转换
+    __m128i* output_128i = (__m128i*)output; //Type conversion
     __m128i llra_in_128i, llrb_in_128i, llrab_in_128i;
 
     int8_t output_tmp;
     // float absmax_float;
     for (i = 0; i + 15 < length; i += 16) {
-        llra_in_256 = _mm256_loadu_ps(input + i); // float是32位比特，这个是两个并行的计算
+        llra_in_256 = _mm256_loadu_ps(input + i); // Float is 32 bits, this is two parallel calculations
         llrb_in_256 = _mm256_loadu_ps(input + i + 8);
-        // AVX版本
+        // AVX Version
         // load 16 float data
 
         // absmax_float = absmax(llra_in_256, llrb_in_256);
-        scale_256 = _mm256_set1_ps(scale); // scale 是一个标量，用来放大信号的。
+        scale_256 = _mm256_set1_ps(scale); // scale is a scalar used to amplify the signal.
         llra_in_256 = _mm256_mul_ps(llra_in_256, scale_256);
-        llrb_in_256 = _mm256_mul_ps(llrb_in_256, scale_256); //一个8
+        llrb_in_256 = _mm256_mul_ps(llrb_in_256, scale_256); //A 8
 
         llra_in_256i = _mm256_cvttps_epi32(llra_in_256); // float to int32
         llrb_in_256i = _mm256_cvttps_epi32(llrb_in_256);
@@ -4744,22 +4744,22 @@ void CLDPC::float2LimitChar_1bit(int8_t* output, const float* input, float scale
         llrab_in_128i = _mm_packs_epi16(llra_in_128i, llrb_in_128i); // int16 to int8
         /*>=0=+31*/
         llrab_in_128i = _mm_cmpgt_epi8(llrab_in_128i,
-            zero); //分别比较a的每个8bits整数是否大于b的对应位置的8bits整数，若大于，则返回-1(ff)，否则返回0。
+            zero); //Compare each 8-bit integer of a to see if it is greater than the 8-bit integer at the corresponding position of b. If so, return -1 (ff), otherwise return 0.
         llrab_in_128i = _mm_xor_si128(
             llrab_in_128i, bit_1_xor); // 00000000xor11000000=1100000(-64) 11111111xor11000000=00111111(63)
 
         /*>0=+31*/
         // llrab_in_128i =
-        // _mm_cmpgt_epi8(zero,llrab_in_128i);//分别比较a的每个8bits整数是否大于b的对应位置的8bits整数，若大于，则返回-1(ff)，否则返回0。
+        // _mm_cmpgt_epi8(zero,llrab_in_128i);//Compare each 8-bit integer of a to see if it is greater than the 8-bit integer at the corresponding position of b. If so, return -1 (ff), otherwise return 0.
         // llrab_in_128i = _mm_xor_si128(llrab_in_128i, bit_1_xor);//00000000xor11000000=00111111(63)
         // 11111111xor00111111=11000000(63)
 
-        llrab_in_128i = _mm_min_epi8(llrab_in_128i, limit0_128i); //正数符号位为0 01111111
+        llrab_in_128i = _mm_min_epi8(llrab_in_128i, limit0_128i); //The sign bit of a positive number is 0 01111111
         llrab_in_128i = _mm_max_epi8(llrab_in_128i, limit1_128i); // set limitation +-31
-        //或者 llrab_in_128i = _mm_min_epi8(llrab_in_128i, 0);
+        //or llrab_in_128i = _mm_min_epi8(llrab_in_128i, 0);
         // llrab_in_128i = _mm_max_epi8(llrab_in_128i, -1);//即>0=00000000 <0=11111111
         // llrab_in_128i = _mm_xor_si128(llrab_in_128i, 31);//00000000xor00011111=00011111(31)
-        // 11111111xor00011111=11100000(-32)//负数值取反加一为绝对值
+        // 11111111xor00011111=11100000(-32)//Negative values ​​are inverted and added to the absolute value
         _mm_storeu_si128(output_128i++, llrab_in_128i);
     }
     for (; i < length; i++) {
@@ -4781,20 +4781,20 @@ void CLDPC::Initial(int nb_frame, int MaxItertion)
     m_frame = nb_frame; // default 16
     nb_iteration = MaxItertion;
 
-    inputBits = (int8_t*)vec_malloc(sizeof(int8_t) * (NmoinsK - _ShortenBits) * m_frame); // 32帧的全都要存
+    inputBits = (int8_t*)vec_malloc(sizeof(int8_t) * (NmoinsK - _ShortenBits) * m_frame); // All 32 frames must be saved
     outputBits = (int8_t*)vec_malloc(sizeof(int8_t) * BitsOverChannel * m_frame);
     ; // new int8_t[BitsOverChannel*m_frame];
 
     encoder_varnodes = (__m256i*)vec_malloc(sizeof(__m256i) * m_N); // new __m256i[m_N];
     var_nodes = (__m256i*)vec_malloc(sizeof(__m256i) * m_N);
-    ; // new __m256i[m_N];只存一帧的
+    ; // new __m256i[m_N]; only one frame is stored
 
     var_msgs = (__m256i*)vec_malloc(sizeof(__m256i) * _NoOnes); // new __m256i[_NoOnes];
     p_vn_adr = (__m256i**)vec_malloc(sizeof(__m256i*) * _NoOnes); // new TYPE *[_NoOnes];
                                                                   // DATE:20190508
                                                                   // /
     decodedBits
-        = (int8_t*)vec_malloc(sizeof(int8_t) * (NOEUD)*m_frame); //存所有的东西，包含punture information shorten check
+        = (int8_t*)vec_malloc(sizeof(int8_t) * (NOEUD)*m_frame); //Save everything, including punture information shorten check
     // decodedBits, the length is the length of the information bits
     // date:20190306
     // decodedBits = (int8_t*)vec_malloc(sizeof(int8_t)*(NmoinsK - _ShortenBits)*m_frame);//new int8_t[(NmoinsK -
@@ -4803,12 +4803,12 @@ void CLDPC::Initial(int nb_frame, int MaxItertion)
     VN_weight_ = (int8_t*)malloc(sizeof(int8_t) * _NoVar);
     VN_weight_count();
 
-    errorbitblock = (int*)malloc(sizeof(int) * BitsOverChannel * m_frame); //记录bit错误的块
-    errorbitindex = (int*)malloc(sizeof(int) * BitsOverChannel * m_frame); //记录bit错误所在的块的位置
-    errorcheckblock = (int*)malloc(sizeof(int) * BitsOverChannel * m_frame); //记录check错误的块
-    errorcheckindex = (int*)malloc(sizeof(int) * BitsOverChannel * m_frame); //记录check错误所在的块的位置
-    errorfloat = (float*)malloc(sizeof(float) * NOEUD * m_frame); //记录对应过信道后BPSKSymbol的float值
-    errorchar = (int*)malloc(sizeof(int) * NOEUD * m_frame); //记录对应量化后FixInput的值
+    errorbitblock = (int*)malloc(sizeof(int) * BitsOverChannel * m_frame); //Blocks recording bit errors
+    errorbitindex = (int*)malloc(sizeof(int) * BitsOverChannel * m_frame); //Record the location of the block where the bit error is located
+    errorcheckblock = (int*)malloc(sizeof(int) * BitsOverChannel * m_frame); //Block that records check errors
+    errorcheckindex = (int*)malloc(sizeof(int) * BitsOverChannel * m_frame); //Record the location of the block where the check error occurs
+    errorfloat = (float*)malloc(sizeof(float) * NOEUD * m_frame); //Record the float value of BPSKSymbol after the corresponding channel
+    errorchar = (int*)malloc(sizeof(int) * NOEUD * m_frame); //Record the value of FixInput after quantization
 
     int i = 0;
     for (i = 0; i < _NoOnes; ++i) {
@@ -4839,13 +4839,13 @@ Statistic CLDPC::CalculateErrors(float* bpskinput, int8_t* charinput, int collec
     int l = 0;
     int m = 0;
 
-    for (i = 0; i < m_frame; ++i) // 32帧串行比较
+    for (i = 0; i < m_frame; ++i) // 32 frame serial comparison
     {
         errorBits = 0;
         m = 0;
-        //统计BER FER 仅统计puncture+information 输出biterror(k)
+        //Statistics BER FER Statistics only puncture + information Output biterror (k)
         for (j = 0; j < ((NmoinsK - _ShortenBits)); ++j) {
-            // decodedbits中存储了所有块的信息，但只比较信息比特，毕竟 inputBits 里只有信息比特
+            // The decodedbits stores the information of all blocks, but only the information bits are compared, after all, there are only information bits in the inputBits
             if (decodedBits[i * (NOEUD) + j] != inputBits[i * (NmoinsK - _ShortenBits) + j]) {
                 errorBits++;
                 int bitblocknum = j / Z;
@@ -4854,8 +4854,8 @@ Statistic CLDPC::CalculateErrors(float* bpskinput, int8_t* charinput, int collec
                 k++;
             }
         }
-        //统计check错误 输出checkerror(m)
-        for (j = NmoinsK; j < _NoVar; ++j) //统计check
+        //Statistics check error output checkerror(m)
+        for (j = NmoinsK; j < _NoVar; ++j) //Statistics check
         {
             if (decodedBits[i * (NOEUD) + j]
                 != outputBits[32 * (NmoinsK - _PunctureBits - _ShortenBits) + i * _NoCheck + (j - NmoinsK)]) // check
@@ -4870,11 +4870,11 @@ Statistic CLDPC::CalculateErrors(float* bpskinput, int8_t* charinput, int collec
             Test.ErrorBits += errorBits;
             Test.ErrorFrame++;
             // date20190508
-            //统计错误数小于3比特的帧，如果存在则增加迭代次数
+            //Count frames with errors less than 3 bits. If any exist, increase the number of iterations.
             if (errorBits < 3) {
                 Test.LT3ErrBitFrame++;
             }
-            if (collect_err == 1) //是否输出错误信息开关
+            if (collect_err == 1) //Whether to output error information switch
             {
 
                 eout.open("errorindex.txt", std::ios::app);
@@ -4882,12 +4882,12 @@ Statistic CLDPC::CalculateErrors(float* bpskinput, int8_t* charinput, int collec
                 dout.open("errordecode.txt", std::ios::app);
 
                 // errorindex.txt
-                eout << "ErrorFrame: " << i << endl; // 32帧的第几帧发生错误
+                eout << "ErrorFrame: " << i << endl; // Which frame of 32 frames has an error?
 
-                // information部分
-                eout << "ErrorBit Num: " << k << endl; //该帧错误的比特数
+                // Information part
+                eout << "ErrorBit Num: " << k << endl; //The number of error bits in this frame
 
-                eout << "Errorbit Block: "; //那个块发生错误
+                eout << "Errorbit Block: "; //That block has an error
                 for (j = 0; j < k; j++)
 
                 {
@@ -4895,21 +4895,21 @@ Statistic CLDPC::CalculateErrors(float* bpskinput, int8_t* charinput, int collec
                 }
                 eout << endl;
 
-                eout << "Errobit Index: "; //错误发生在块的哪一个位置
+                eout << "Errobit Index: "; //Where in the block the error occurred
                 for (j = 0; j < k; j++) {
                     eout << errorbitindex[j] << "\t";
                 }
                 eout << endl;
 
-                // check部分
-                eout << "Errorcheck Num: " << m << endl; //该帧错误的比特数
-                eout << "Errorcheck Block: "; //那个块发生错误
+                // Check part
+                eout << "Errorcheck Num: " << m << endl; //The number of error bits in this frame
+                eout << "Errorcheck Block: "; //That block has an error
                 for (j = 0; j < m; j++) {
                     eout << errorcheckblock[j] << "\t";
                 }
                 eout << endl;
 
-                eout << "Errorcheck Index: "; //错误发生在块的哪一个位置
+                eout << "Errorcheck Index: "; //Where in the block the error occurred
                 for (j = 0; j < m; j++) {
                     eout << errorcheckindex[j] << "\t";
                 }
@@ -4917,24 +4917,24 @@ Statistic CLDPC::CalculateErrors(float* bpskinput, int8_t* charinput, int collec
                 eout.close();
 
                 // ErrorNum.txt
-                //输出过信道之后的float值和量化后的limitchar
-                // date20190629 只需要bitsoverchannel
-                for (j = 0; j < (NmoinsK - _PunctureBits); j++) //信息比特部分
+                //Output the float value after passing through the channel and the quantized limitchar
+                // date20190629 Only bitsoverchannel is needed
+                for (j = 0; j < (NmoinsK - _PunctureBits); j++) //Information bit part
                 {
                     errorfloat[l] = (float)bpskinput[i * (NmoinsK - _PunctureBits) + j];
                     errorchar[l] = (int)charinput[i * (NmoinsK - _PunctureBits) + j];
                     l++;
                 }
 
-                for (j = 0; j < _NoCheck; j++) // check部分
+                for (j = 0; j < _NoCheck; j++) // Check part
                 {
                     errorfloat[l] = (float)bpskinput[(NmoinsK - _PunctureBits) * 32 + i * _NoCheck + j];
                     errorchar[l] = (int)charinput[(NmoinsK - _PunctureBits) * 32 + i * _NoCheck + j];
                     l++;
                 }
 
-                // nout << "ErrorFrame Num: " << i << endl;//32帧的第几帧发生错误
-                nout << "ErrorFloat=[ "; //通过awgn信道后的值，information+check
+                // nout << "ErrorFrame Num: " << i << endl;//Which frame of 32 frames has an error?
+                nout << "ErrorFloat=[ "; //The value after passing through the awgn channel, information+check
                 for (j = 0; j < l; j++) {
                     nout << errorfloat[j] << "\t";
                 }

@@ -21,31 +21,31 @@ void CLDPC::Decode_OMS()
     const TYPE factor_2 = VECTOR_SET1(p_simulation.Factor_2);
     const TYPE zero = VECTOR_ZERO;
     const TYPE ones = VECTOR_SET1(1);
-    //#define SAT_NEG_MSG(-(0x0001 << (NB_BITS_MESSAGES - 1)) + 1) -31(6bit量化）
+    //#define SAT_NEG_MSG(-(0x0001 << (NB_BITS_MESSAGES - 1)) + 1) -31(6bit quantization)
     const TYPE minMesg = VECTOR_SET1(SAT_NEG_MSG);
 
-    // 剩余迭代次数只剩 floor_iter_thresh 的时候，若译码校验式错误数少于 floor_err_count 则改变 offset 设置值
-    const uint8_t floor_err_count = 100; // 0~255，消平层算法启用条件
-    const int floor_iter_thresh = 4; // 0~MaxIteration，消平层算法启用条件
-    __mmask32 l_mask_eq = 0; // == : 0; != : 1, 保存上次校验结果，初始为都错
-    __mmask32 l_m_error_sum = 0; // 上次的错误数是否小于 floor_err_count，满足则为 1
-    __mmask32 l_checksum_[_NoCheck] = { 0 }; // == : 0; != : 1，初始为都对
+    // When the number of remaining iterations is only floor_iter_thresh, if the number of decoding checksum errors is less than floor_err_count, change the offset setting value
+    const uint8_t floor_err_count = 100; // 0~255, the condition for enabling the leveling algorithm
+    const int floor_iter_thresh = 4; // 0~MaxIteration, the conditions for enabling the leveling algorithm
+    __mmask32 l_mask_eq = 0; // == : 0; != : 1, save the last verification result, initially all wrong
+    __mmask32 l_m_error_sum = 0; // Is the last error count less than floor_err_count? If yes, it is 1
+    __mmask32 l_checksum_[_NoCheck] = { 0 }; // == : 0; != : 1, initially both are correct
     size_t i, j, z;
 
     /* Lmn Initialization */
     for (i = 0; i < MESSAGE; ++i) {
         var_msgs[i] = zero;
     }
-    // The information part 交织 解调初始似然比排列格式，只是并行存储，并不是真的交织
-    // 第一个码字第一个对数似然比，第二个码字第一个，……第32个码字第一个，第一个码字第二个……
+    // The information part is interleaved. The demodulated initial likelihood ratio is arranged in a format that is only stored in parallel, not really interleaved.
+    // The first codeword has the first log-likelihood ratio, the second codeword has the first, ... the 32nd codeword has the first, the first codeword has the second, ...
     if ((NmoinsK - _PunctureBits - _ShortenBits) % 32 == 0) {
         uchar_transpose_avx(
             (TYPE*)fixInput, (TYPE*)(var_nodes + _PunctureBits), (NmoinsK - _PunctureBits - _ShortenBits));
     } else {
-        ptr = (int8_t*)(var_nodes + _PunctureBits); //指针起始位置在puncture后，即打孔在最前
+        ptr = (int8_t*)(var_nodes + _PunctureBits); //The pointer starts after the puncture, which means the puncture is at the front.
         for (i = 0; i < (NmoinsK - _PunctureBits - _ShortenBits); ++i) {
             for (j = 0; j < 32; ++j) {
-                //除去puncture和shorten的原始似然比
+                //Original likelihood ratio without puncture and shortening
                 ptr[i * 32 + j] = fixInput[j * (NmoinsK - _PunctureBits - _ShortenBits) + i];
             }
         }
@@ -64,12 +64,12 @@ void CLDPC::Decode_OMS()
         }
     }
 
-    // // puncture 最前 llr=0
+    // // puncture  llr=0
     // for (i = 0; i < _PunctureBits; ++i) {
     //     var_nodes[i] = zero;
     // }
 
-    // // shorten 最后 llr=minMesg
+    // // shorten last llr=minMesg
     // for (i = NmoinsK - _ShortenBits; i < NmoinsK; ++i) {
     //     var_nodes[i] = minMesg;
     // }
@@ -80,7 +80,7 @@ void CLDPC::Decode_OMS()
 
     int nombre_iterations = nb_iteration;
     // Fixed iterations
-    while (nombre_iterations--) { //一次迭代开始，没有动态终止
+    while (nombre_iterations--) { //An iteration starts, without dynamic termination
         TYPE* p_msg1r = var_msgs; // read Lmn
         TYPE* p_msg1w = var_msgs; // write Lmn
 #if PETIT == 1
@@ -101,8 +101,8 @@ void CLDPC::Decode_OMS()
         // tentative output
 #if STOP_EARLY
         const unsigned short* pCN = PosNoeudsVariable;
-        __mmask32 mask_sum; // == : 0; != : 1，初始为都对
-        TYPE error_sum = zero; // 错的地方加一，最大为 255（虽然数据类型是 epi8，但计算时用epu8）
+        __mmask32 mask_sum; // == : 0; != : 1, initially both are correct
+        TYPE error_sum = zero; // Add 1 to the wrong values, up to 255 (although the data type is epi8, epu8 is used for calculation)
         for (i = 0; i < DEG_1_COMPUTATIONS; i++) {
             mask_sum = 0;
             for (j = 0; j < DEG_1; j++) {
@@ -339,8 +339,8 @@ void CLDPC::Decode_OMS()
 
 #if (DEG_1 & 0x01) == 1
             const unsigned char sign8 = 0x80; // sign8 =128=1000000B
-            // isign =12*16=11000000B,之所以使用的是X100,0000,是为了如果他的符号为是0，则在进行
-            // _mm_sign_epi8运算时，符合要求。
+            // isign =12*16=11000000B, the reason why X100,0000 is used is that if its sign is 0, then
+            // _mm_sign_epi8 operation meets the requirements.
             const unsigned char isign8 = 0xC0;
             const TYPE msign8 = VECTOR_SET1(sign8);
             const TYPE misign8 = VECTOR_SET1(isign8);
@@ -427,9 +427,9 @@ void CLDPC::Decode_OMS()
                 __mmask32 msk_ge6_2 = VECTOR_GE_MASK(min2_offed, factor_2); // where min >= factor_2
                 min2_offed = VECTOR_SUB_MASK(msk_ge6_2, min2_offed, ones); // min_offed = min_offed - 1 = min - 2
             }
-            // 限幅回量化宽度
-            TYPE cste_1 = VECTOR_MIN(min2_offed, max_msg); // 次小
-            TYPE cste_2 = VECTOR_MIN(min1_offed, max_msg); // 最小
+            // Limiting quantization width
+            TYPE cste_1 = VECTOR_MIN(min2_offed, max_msg); // Second Small
+            TYPE cste_2 = VECTOR_MIN(min1_offed, max_msg); // Minimum
 
 #endif
 
@@ -453,9 +453,9 @@ void CLDPC::Decode_OMS()
                 TYPE vContr = tab_vContr[j]; // Lnm in the ith iteration
                 TYPE vAbs = VECTOR_ABS(vContr); // Lmn_new test if saturates
                 TYPE z = VECTOR_EQUAL(vAbs, min1); // a==min1?== 0xff else 0x00
-                TYPE g = VECTOR_AND(cste_1, z);     // vAbs == min1 则 g = cste_1 否则 0
-                TYPE h = VECTOR_ANDNOT(z, cste_2);  // vAbs != min1 则 h = cste_2 否则 0
-                TYPE vRes = VECTOR_OR(g, h);        // vAbs == min1 则 vRes = cste_1 否则 cste_2
+                TYPE g = VECTOR_AND(cste_1, z);     // vAbs == min1 then g = cste_1 otherwise 0
+                TYPE h = VECTOR_ANDNOT(z, cste_2);  // vAbs != min1 then h = cste_2 otherwise 0
+                TYPE vRes = VECTOR_OR(g, h);        // vAbs == min1 then vRes = cste_1 otherwise cste_2
                 TYPE vSig = VECTOR_XOR(sign, VECTOR_GET_SIGN_BIT(vContr, msign8)); // sign is in Algorithm Line 15
                 TYPE v2St = VECTOR_invSIGN2(vRes, vSig); // compute the Lmn in the next iteration
                 TYPE v2Sr = VECTOR_ADD_AND_SATURATE_VAR_8bits(vContr, v2St, min_var); // update the En in Algorithm 21
@@ -2962,7 +2962,7 @@ void CLDPC::Decode_OMS()
                 is the whole codeword,and the statistic result of BER and FER is the whole codeword
                 it is different from the Program for 5G platform
         */
-    //解交织
+    //Deinterleaving
     if ((NOEUD) % 32 == 0) {
         uchar_itranspose_avx((TYPE*)var_nodes, (TYPE*)decodedBits, (NOEUD));
     } else {
@@ -2991,7 +2991,7 @@ void CLDPC::Decode_OMS()
     //		for (int j = 0; j < 32; j += 1)
     //		{
     //			decodedBits[j *(NmoinsK - _ShortenBits) + i] = (ptr[32 * i + j] >
-    // 0);//varnode0存第一帧第一个信息 varnode1存第二帧第一个信息 varnode32存第一帧第二个信息
+    // 0);//varnode0 stores the first information of the first frame, varnode1 stores the first information of the second frame, and varnode32 stores the second information of the first frame.
     //		}
     //	}
     //}

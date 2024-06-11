@@ -1,4 +1,4 @@
-# Mod IterleaveAVX MultiThreads
+# LNS FAID
 
 Source codes for the paper "Optimized LNS-FAID of LDPC Codes: A Hybrid Precision Decoding Approach for 50G-PON".
 

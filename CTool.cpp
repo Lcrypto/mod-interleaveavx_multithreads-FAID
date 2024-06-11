@@ -17,7 +17,7 @@ void uchar_transpose_avx(__m256i *src, __m256i *dst, int n)
 		//IACA_START
 
 		__m256i *copy_p_input = p_input;
-		// 低16个码字
+		// Low 16 code words
 		__m256i a = LOAD_SIMD_FX(copy_p_input);
 		copy_p_input += constN;
 		__m256i b = LOAD_SIMD_FX(copy_p_input);
@@ -292,7 +292,7 @@ void uchar_transpose_avx(__m256i *src, __m256i *dst, int n)
 
 void uchar_itranspose_avx(__m256i *src, __m256i *dst, int n)
 {
-	const int constN = n / 32; // NOMBRE DE PAQUET (128 bits) PAR TRAME
+	const int constN = n / 32; // NUMBER OF PACKETS (128 bits) PER FRAME
 	__m256i *p_input = src;
 	__m256i *p_output = dst;
 	int loop = constN;

@@ -1,5 +1,5 @@
 #include "CChannel.h"
-static int thread_id = 173; // the seed for  vslNewStream function 噪声信道种子
+static int thread_id = 173; // the seed for  vslNewStream function Noise channel seed
 
 #if CONTINUE_SEED
 const unsigned long lastSeed[MAX_THREADS][3] = { { 12678, 39522, 25973 }, { 20905, 3872, 18931 }, { 37359, 59458, 4847 },

@@ -27,7 +27,7 @@ int main(void)
     Parameter_Simulation p_simulation;
     ReadProfile(&p_simulation);
 
-    /*MAX_THREADS个线程初始化*/
+    /*MAX_THREADS threads initialize*/
     CSimulate simulate[MAX_THREADS];
     for (i = 0; i < MAX_THREADS; ++i) {
         simulate[i].Initial(p_simulation, i);
@@ -82,7 +82,7 @@ int main(void)
              << "ModSER" << '\t' << endl;
     demodout.close();
     tout.open("Temp.txt", std::ios::app);
-    /* Temp.txt 文件基本信息 后期刷新会丢失*/
+    /* Basic information of Temp.txt file will be lost after refresh*/
     tout << "DATE:" << __DATE__ << endl;
     tout << "Time" << __TIME__ << endl;
     tout << "MaxItertion:" << p_simulation.Max_Iteration << endl;
@@ -96,7 +96,7 @@ int main(void)
          << setw(20) << "FER" << setw(20) << "BER" << setw(15) << "LT3ErrBitFrame" << setw(15) << endl;
     tout.close();
 
-    /* Result.txt 文件基本信息 后期刷新会丢失*/
+    /* Basic information of Result.txt file will be lost after later refresh*/
     fout << endl;
     fout << "**********************************************************************************************************"
             "**********************************"
@@ -142,7 +142,7 @@ int main(void)
         ModErrorSymbol = 0;
         LT3ErrBitFrame = 0;
         demodout.open("demod.txt", std::ios::app);
-        fout.open("Result.txt", std::ios::app); //以ios::app|ios::out,如果没有文件则创建文件，如果有文件，则在文件尾追加
+        fout.open("Result.txt", std::ios::app); //Use ios::app|ios::out to create a file if it does not exist, or append it to the end of the file if it does exist.
         eout.open("errorindex.txt", std::ios::app);
         nout.open("errorfloat.txt", std::ios::app);
         dout.open("errordecode.txt", std::ios::app);
@@ -155,7 +155,7 @@ int main(void)
         nout.close();
         dout.close();
         iterOut.close();
-        //初始化噪声
+        //Initialization noise
         for (i = 0; i < MAX_THREADS; ++i) {
             simulate[i].Configure(snr, p_simulation.decode_method);
         }
@@ -184,20 +184,20 @@ int main(void)
             ModSER = (double)(ModErrorSymbol) / (TestFrame * (NmoinsK - _ShortenBits) / p_simulation.mod_type);
             ModFER = (double)(ModErrorFrame) / TestFrame;
             BER = (double)(ErrorBits > 0 ? ErrorBits : 1)
-                / (TestFrame * (NmoinsK - _ShortenBits)); // 假设错一个，模拟BER
+                / (TestFrame * (NmoinsK - _ShortenBits)); // Assume one is wrong, simulate BER
             FER = (double)(ErrorFrame > 0 ? ErrorFrame : 1) / TestFrame;
 
             if (FER < 1E-5) {
                 collectflag = 1;
             }
 
-            tout.open("Temp.txt", std::ios::out); // ios::out文件以输出方式打开(内存数据输出到文件)
+            tout.open("Temp.txt", std::ios::out); // ios::out file is opened in output mode (memory data is output to the file)
 
             tout << setw(5) << snr << '\t' << setw(20) << TestFrame << '\t' << setw(15) << ErrorFrame << '\t'
                  << setw(20) << ErrorBits << '\t' << setw(20) << FER << '\t' << setw(20) << BER << '\t' << setw(15)
                  << LT3ErrBitFrame << '\t' << endl;
 
-            //输出噪声的种子，方便断点继续
+            //Output the noise seed to facilitate breakpoint continuation
             tout << "const unsigned long lastSeed[" << MAX_THREADS << "][3] = {\n";
             for (i = 0; i < MAX_THREADS; ++i) {
                 tout << setw(4) << '{' << simulate[i].channel->RS.IX << "," << simulate[i].channel->RS.IY << ','
