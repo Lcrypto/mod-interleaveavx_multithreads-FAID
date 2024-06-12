@@ -2300,7 +2300,7 @@ void CLDPC::Decode()
     //}
     //
 }
-void CLDPC::Decode1() //固定迭代次数为60的译码过程
+void CLDPC::Decode1() // decoding with fixed number of iteration, default 60
 {
     Parameter_Simulation p_simulation;
     ReadProfile(&p_simulation);
